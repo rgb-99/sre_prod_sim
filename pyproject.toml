@@ -1,0 +1,42 @@
+[project]
+name = "prod-sim"
+version = "0.1.0"
+description = "Production simulation environment — KinD + OTel Demo + observability + fault injection + RL bridge"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "pyyaml>=6.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "httpx>=0.28.0",
+    "kubernetes>=31.0.0",
+    "pydantic>=2.10.0",
+]
+
+[project.scripts]
+setup-cluster = "scripts.setup_cluster:main"
+deploy-otel = "scripts.deploy_otel_demo:main"
+deploy-monitoring = "scripts.deploy_monitoring:main"
+deploy-chaos-mesh = "scripts.deploy_chaos_mesh:main"
+start-portforwards = "scripts.start_portforwards:main"
+stop-portforwards = "scripts.stop_portforwards:main"
+verify-stack = "scripts.verify:main"
+teardown = "scripts.teardown:main"
+cleanup-fault = "scripts.cleanup_fault:main"
+inject-oom-ad = "infra.fault_scenarios.inject_oom_ad:main"
+inject-memory-leak-jvm = "infra.fault_scenarios.inject_memory_leak_ad_jvm:main"
+inject-memory-leak-recommendation = "infra.fault_scenarios.inject_memory_leak_recommendation:main"
+inject-bad-deploy-payment = "infra.fault_scenarios.inject_bad_deploy_payment:main"
+inject-config-drift-kafka = "infra.fault_scenarios.inject_config_drift_kafka:main"
+inject-network-partition-payment = "infra.fault_scenarios.inject_network_partition_payment:main"
+start-bridge = "server.live_k8s_env:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["scripts", "k8s", "infra", "server"]

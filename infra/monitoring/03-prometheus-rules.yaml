@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: firewatch
+data:
+  firewatch-alerts.yaml: |
+    groups:
+      - name: firewatch-alerts
+        rules:
+          # Rule 1: ServiceOOMKilled — maps to fault archetype 'oom'
+          - alert: ServiceOOMKilled
+            expr: >-
+              increase(kube_pod_container_status_last_terminated_reason{reason="OOMKilled", namespace="otel-demo"}[3m]) > 0
+            for: 30s
+            labels:
+              severity: page
+              fault_archetype: oom
+              service: '{{ $labels.container }}'
+            annotations:
+              summary: "Service {{ $labels.container }} OOMKilled (exit code 137)"
+
+          # Rule 2: ServiceMemoryCritical — maps to 'memory_leak' (bridge reclassifies to 'oom' if OOMKilled also fires)
+          - alert: ServiceMemoryCritical
+            expr: >-
+              (container_memory_working_set_bytes{namespace="otel-demo", container!="", container!="POD"}
+              / container_spec_memory_limit_bytes{namespace="otel-demo", container!="", container!="POD"} > 0.85)
+              and container_spec_memory_limit_bytes{namespace="otel-demo", container!="", container!="POD"} > 0
+            for: 2m
+            labels:
+              severity: critical
+              fault_archetype: memory_leak
+              service: '{{ $labels.container }}'
+            annotations:
+              summary: "Memory {{ $labels.container }} exceeds 85% of limit"
+
+          # Rule 3: HighLatency — maps to 'config_drift' (depends on OTel Collector scrape Job 5)
+          - alert: HighLatency
+            expr: >-
+              histogram_quantile(0.99,
+                sum by (service, le) (
+                  rate(http_server_request_duration_seconds_bucket{service_namespace="otel-demo"}[2m])
+                )
+              ) > 2.0
+            for: 1m
+            labels:
+              severity: critical
+              fault_archetype: config_drift
+              service: '{{ $labels.service }}'
+            annotations:
+              summary: "Service {{ $labels.service }} p99 latency exceeds 2s"
+
+          # Rule 4: HighErrorRate — maps to 'bad_deploy' (OTel-based)
+          - alert: HighErrorRate
+            expr: >-
+              sum by (service) (
+                rate(http_server_request_duration_seconds_count{service_namespace="otel-demo", http_response_status_code=~"5.."}[2m])
+              )
+              /
+              sum by (service) (
+                rate(http_server_request_duration_seconds_count{service_namespace="otel-demo"}[2m])
+              ) > 0.10
+            for: 1m
+            labels:
+              severity: page
+              fault_archetype: bad_deploy
+              service: '{{ $labels.service }}'
+            annotations:
+              summary: "Service {{ $labels.service }} error rate above 10%"
+
+          # Rule 5: PodCrashLooping — maps to 'bad_deploy' (or 'oom' post-restart)
+          - alert: PodCrashLooping
+            expr: >-
+              rate(kube_pod_container_status_restarts_total{namespace="otel-demo"}[5m]) * 60 > 1
+            for: 2m
+            labels:
+              severity: warning
+              fault_archetype: bad_deploy
+              service: '{{ $labels.container }}'
+            annotations:
+              summary: "Pod {{ $labels.pod }} crash-looping (>1 restart/min)"
+
+          # Rule 6: NetworkPartition — maps to 'network_partition'
+          - alert: NetworkPartition
+            expr: >-
+              sum by (pod) (
+                rate(container_network_receive_errors_total{namespace="otel-demo"}[2m])
+                + rate(container_network_transmit_errors_total{namespace="otel-demo"}[2m])
+              ) > 1
+            for: 1m
+            labels:
+              severity: page
+              fault_archetype: network_partition
+              service: '{{ $labels.pod }}'
+            annotations:
+              summary: "Service {{ $labels.pod }} experiencing network errors"
+
+          # Rule 7: GCPressure — maps to 'memory_leak' (JVM services: ad, fraud-detection)
+          - alert: GCPressure
+            expr: >-
+              rate(jvm_gc_duration_seconds_sum{service_namespace="otel-demo"}[2m])
+              / rate(jvm_gc_duration_seconds_count{service_namespace="otel-demo"}[2m]) > 0.05
+            for: 2m
+            labels:
+              severity: warning
+              fault_archetype: memory_leak
+              service: '{{ $labels.service }}'
+            annotations:
+              summary: "JVM service {{ $labels.service }} under GC pressure"

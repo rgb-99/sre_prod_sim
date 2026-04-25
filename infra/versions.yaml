@@ -1,0 +1,54 @@
+# Pinned versions for all SPEC-P1 infrastructure components.
+# Update this file when upgrading any dependency.
+
+kind:
+  min_version: "0.20.0"
+
+kubernetes:
+  # KinD chooses the node image; this records expected k8s version.
+  expected_version: "1.31"
+
+helm:
+  min_version: "3.12.0"
+
+metrics_server:
+  version: "v0.7.2"
+  manifest_url: "https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.7.2/components.yaml"
+
+otel_demo:
+  chart_repo: "https://open-telemetry.github.io/opentelemetry-helm-charts"
+  chart_name: "open-telemetry/opentelemetry-demo"
+  chart_version: "0.32.8"
+
+container_runtime:
+  name: containerd
+  socket_path: "/run/containerd/containerd.sock"
+
+cluster:
+  name: firewatch
+  context: kind-firewatch
+  namespace: otel-demo
+
+# SPEC-P2 — Observability stack components.
+prometheus:
+  image: "prom/prometheus:v2.48.0"
+  version: "v2.48.0"
+
+alertmanager:
+  image: "prom/alertmanager:v0.26.0"
+  version: "v0.26.0"
+
+kube_state_metrics:
+  image: "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1"
+  version: "v2.10.1"
+
+monitoring:
+  namespace: monitoring
+
+# SPEC-P3 — Fault injection layer.
+chaos_mesh:
+  chart_repo: "https://charts.chaos-mesh.org"
+  chart_name: "chaos-mesh/chaos-mesh"
+  chart_version: "2.7.0"
+  namespace: "chaos-mesh"
+

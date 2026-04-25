@@ -1,0 +1,18 @@
+# KinD cluster configuration for the "firewatch" cluster.
+# Single-node topology (control-plane doubles as worker).
+# Port 8080 is mapped to container port 80 for OTel Demo frontend access.
+# serverTLSBootstrap is required so Prometheus can scrape kubelet cAdvisor via HTTPS.
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP
+    kubeadmConfigPatches:
+      - |
+        kind: KubeletConfiguration
+        serverTLSBootstrap: true

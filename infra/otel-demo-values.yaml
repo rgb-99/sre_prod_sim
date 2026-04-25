@@ -1,0 +1,61 @@
+# Custom Helm values for OpenTelemetry Demo on KinD.
+# Reduces resource requests by ~30% from upstream defaults (KinD has less RAM).
+# Enables Prometheus exporter on the OTel Collector.
+# Disables heavy components not needed by the agent/bridge (Grafana, Jaeger, OpenSearch).
+
+# --- Global resource reduction (30% below upstream defaults) ---
+default:
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "100Mi"
+    limits:
+      memory: "250Mi"
+
+# --- OTel Collector: enable Prometheus exporter on port 9464 ---
+opentelemetry-collector:
+  config:
+    exporters:
+      prometheus:
+        endpoint: "0.0.0.0:9464"
+        resource_to_telemetry_conversion:
+          enabled: true
+    service:
+      pipelines:
+        metrics:
+          exporters:
+            - prometheus
+
+  ports:
+    prometheus:
+      enabled: true
+      containerPort: 9464
+      servicePort: 9464
+      protocol: TCP
+
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9464"
+
+# --- Disable components not needed for the agent ---
+grafana:
+  enabled: false
+
+jaeger:
+  enabled: false
+
+opensearch:
+  enabled: false
+
+# --- Keep these enabled ---
+loadgenerator:
+  enabled: true
+
+flagd:
+  enabled: true
+
+# --- Frontend proxy NodePort for host access on port 8080 ---
+frontend-proxy:
+  service:
+    type: NodePort

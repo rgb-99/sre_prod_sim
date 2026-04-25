@@ -1,0 +1,54 @@
+# SPEC-P4 v2 — LiveK8sEnv Bridge Server Configuration
+# All values below match the spec defaults. Adjust paths as needed.
+
+kubeconfig_path: "~/.kube/config"
+kubeconfig_context: "kind-firewatch"
+
+prometheus_url: "http://localhost:9090"
+alertmanager_url: "http://localhost:9093"
+
+otel_demo_namespace: "otel-demo"
+
+# The 15 app-level services from SPEC-P1 v2 §5.4.
+application_services:
+  - frontend
+  - frontend-proxy
+  - cart
+  - checkout
+  - currency
+  - email
+  - payment
+  - shipping
+  - quote
+  - ad
+  - recommendation
+  - product-catalog
+  - accounting
+  - fraud-detection
+  - image-provider
+
+# Infrastructure services — visible but not remediable.
+infrastructure_services:
+  - otel-collector
+  - flagd
+  - valkey-cart
+  - kafka
+  - loadgenerator
+
+# Fiction / computed field parameters (match training env medium difficulty).
+sim_tick_seconds: 30
+slo_initial_budget: 60.0
+slo_burn_rate_per_tick: 2.0
+slo_mitigation_shield_factor: 0.2
+slo_user_facing_services:
+  - frontend
+  - checkout
+
+mttm_streak_ticks: 2
+
+# Resolution polling.
+resolution_poll_interval_seconds: 5
+resolution_poll_timeout_seconds: 60
+
+# Startup timeouts.
+configmap_snapshot_timeout_seconds: 30
